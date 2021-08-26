@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Advanced R course - ´Tidy Thursday´</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Clara Albiñana" />
+    <meta name="date" content="2021-08-26" />
+    <script src="libs/header-attrs-2.10/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
+    <script src="libs/twitter-widget-0.0.1/widgets.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Advanced R course - ´Tidy Thursday´
+### Clara Albiñana
+### NCRR
+### 2021-08-26
+
+---
+
+class: top, middle
+
+![](tt_logo.png)
+
+
+- A weekly data project from the [R4DS](https://r4ds.had.co.nz/) community.
+
+- The aim is to understand how to summarize and arrange data to make meaningful charts with `ggplot2`, `tidyr`, `dplyr`, and other tools in the `tidyverse` ecosystem.
+
+- Safe and supportive space for individuals to practice their **wrangling and data visualization** skills independent of drawing conclusions.
+
+---
+
+# How it works
+
+1. The data set comes from a *source article* and it's available on Mondays.
+
+2. Play with the data set using `ggplot2`, `tidyr` and `dplyr`: explore things that you think are interesting or try to recreate the source article plots/results.
+
+3. Share on [Twitter](https://twitter.com/search?q=%23tidytuesday&amp;src=typed_query) with the hashtag #TidyTuesday on Twitter if you create your own version.
+
+---
+
+# Tidy Thursday
+
+Our own mini-version of Tidy Tuesday!
+
+The idea is to choose a data set from the ones we provide (or use your own), come up with an interesting topic to visualize (or recreate an existing one) using things you have learnt in this course and share with the rest.
+
+0- Join in teams of 2.
+
+1- Choose a dataset from the ones we provide (or use your own if GDPR allow it).
+
+2- Come up with an interesting topic to visualize (or recreate an existing one).
+
+3- Apply things you have learnt in this course or learn how to do them with our help or SO.
+
+4- Share the resulting plot and the code with the rest on Friday with a short presentation talking about challenges and conclusions from the plot.
+
+---
+
+# Choose dataset
+
+Install the **tidytuesdayR** package:
+
+
+```r
+install.packages("tidytuesdayR")
+```
+
+Some interesting ones:
+
+- [Olympic medals](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-07-27/readme.md)
+
+
+```r
+data &lt;- tidytuesdayR::tt_load('2021-07-27')[["olympics"]]
+```
+
+
+- [Netflix titles](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-04-20/readme.md)
+
+
+```r
+data &lt;- tidytuesdayR::tt_load('2021-04-20')[["netflix_titles"]]
+```
+
+
+- [Spotify songs](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-01-21/readme.md)
+
+
+```r
+data &lt;- tidytuesdayR::tt_load('2020-01-21')[["spotify_songs"]]
+```
+
+
+
+If you don't like any of these, you can also choose from all the previous tidy Tuesday datasets [here](https://github.com/rfordatascience/tidytuesday#datasets). 
+
+
+---
+
+# Visualize the data
+
+Come up with a question, or an interesting thing to learn from the variables available in the dataset.
+
+***
+
+You can get inspired by looking at other participants on Twitter:
+
+- Shiny app with a compilation of tweets ordered by likes [TidyTuesdayRocks](https://nsgrantham.shinyapps.io/tidytuesdayrocks/)
+
+- Search for #TidyTuesday + dataset_name in Twitter.
+
+***
+
+Remember that the code will always be available at the author's github page.
+
+---
+# Compilation of tweets
+
+&lt;iframe src="https://nsgrantham.shinyapps.io/tidytuesdayrocks/?showcase=0" width="100%" height="400px"&gt;&lt;/iframe&gt;
+
+
+---
+
+# Example
+
+I tried the recreate a plot using the **Netflix data set**:
+
+<blockquote class="twitter-tweet" data-width="550" data-lang="en" data-dnt="true" data-theme="light"><p lang="en" dir="ltr">In today&#39;s <a href="https://twitter.com/hashtag/TidyTuesday?src=hash&amp;ref_src=twsrc%5Etfw">#TidyTuesday</a> I looked at Netflix movies, specifically checking out movie duration over time. <a href="https://twitter.com/hashtag/Rstats?src=hash&amp;ref_src=twsrc%5Etfw">#Rstats</a> <a href="https://t.co/PeVIhpAsSy">https://t.co/PeVIhpAsSy</a> <a href="https://t.co/2TOZ9nFKQP">pic.twitter.com/2TOZ9nFKQP</a></p>&mdash; Marieke (@marieke_k_jones) <a href="https://twitter.com/marieke_k_jones/status/1384560097821614081?ref_src=twsrc%5Etfw">April 20, 2021</a></blockquote>
+
+
+&lt;img src="plot_twitter.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+### My (quick) version
+
+
+
+
+```r
+plot_netflix &lt;- netflix_titles %&gt;%
+  filter(type == "Movie") %&gt;%
+  mutate(duration = as.numeric(str_extract(duration, "(\\d)+")),
+         cat = map_chr(listed_in, ~str_split(.x, ", ")[[1]][1]),
+         cat = case_when(
+    cat %in% c("Horror Movies", "Thrillers") ~ "Horror Movies &amp; Thrillers",
+    TRUE ~ cat)) %&gt;%
+  group_by(release_year, cat) %&gt;%
+  summarise(mean_duration = mean(duration)) %&gt;%
+  filter(cat %in% c("Action &amp; Adventure", "Children &amp; Family Movies",
+                    "Comedies", "Documentaries", "Dramas", 
+                    "Horror Movies &amp; Thrillers")) %&gt;%
+  ggplot(aes(x = release_year, y = mean_duration, color = cat)) +
+  geom_line() +
+  scale_x_continuous(limits = c(1980, 2020)) +
+  scale_y_continuous(limits = c(50, 160), breaks = seq(50,150, 25)) +
+  facet_wrap(~cat) +
+  theme_minimal() + 
+  theme(text = element_text(size = 14),
+        legend.position = "none", 
+        axis.title.x = element_blank()) +
+  labs(title = "Children's movies and Dramas decrease in duration over time", 
+       y = "Average movie duration (min)")
+```
+
+
+
+---
+
+&lt;img src="presentation_project_files/figure-html/unnamed-chunk-10-1.png" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Presentation
+
+Make a short presentation (try using Rmarkdown for the slides, recommend `xaringan`) with your results.
+
+Structure suggestions:
+
+- Introduce the data set and the variables you have chosen to visualize.
+
+- Show the resulting plot and discuss the trends/patterns in the data.
+
+- If you chose to recreate a visualization from Twitter, comment on the quality of the plot or potential problems.
+
+- Show the generative code and comment on the steps and transformations you have applied to the data.
+
+- Did you find a set of `tidyverse` functions particularly useful? Did you discover a useful package?
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
